@@ -10,10 +10,11 @@ from transformers import DPTFeatureExtractor, DPTForDepthEstimation
 from diffusers import ControlNetModel, StableDiffusionXLControlNetImg2ImgPipeline, AutoencoderKL
 from diffusers.utils import load_image
 
-controlnetModel_path = "D:\IA\Pepsi-ia\IA\models\controlnet-depth-sdxl-1.0"
-sd_xl_path = "D:\IA\Pepsi-ia\IA\models\stable-diffusion-xl-base-1.0\sd_xl_base_1.0.safetensors"
-reference_image_directory = "D:\IA\Pepsi-ia\IA\Imagenes_de_referencia"
-output_directory = "D:\\IA\\Pepsi-ia\\IA\\resultados"
+controlnetModel_path = r"D:\IA\Pepsi-ia\IA\models\controlnet-depth-sdxl-1.0"
+sd_xl_path = r"D:\IA\Pepsi-ia\IA\models\stable-diffusion-xl-base-1.0\sd_xl_base_1.0.safetensors"
+vae_path = r"D:\IA\Pepsi-ia\IA\models\stable-diffusion-xl-base-1.0\sd_xl_base_1.0_0.9vae.safetensors"
+reference_image_directory = r"D:\IA\Pepsi-ia\IA\Imagenes_de_referencia"
+output_directory = r"D:\IA\Pepsi-ia\IA\resultados"
 base_prompt = "wooden table with a plate containing ({}) and a generic can of soda as drink"
 
 depth_estimator = DPTForDepthEstimation.from_pretrained("Intel/dpt-hybrid-midas").to("cuda")
@@ -24,7 +25,7 @@ controlnet = ControlNetModel.from_pretrained(
     use_safetensors=True,
     torch_dtype=torch.float16,
 )
-vae = AutoencoderKL.from_single_file("D:\IA\Pepsi-ia\IA\models\stable-diffusion-xl-base-1.0\sd_xl_base_1.0_0.9vae.safetensors", torch_dtype=torch.float16)
+vae = AutoencoderKL.from_single_file(vae_path, torch_dtype=torch.float16)
 pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_single_file(
     sd_xl_path,
     controlnet=controlnet,
