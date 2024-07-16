@@ -10,32 +10,6 @@ from transformers import DPTFeatureExtractor, DPTForDepthEstimation
 from diffusers import ControlNetModel, StableDiffusionXLControlNetPipeline, AutoencoderKL
 from diffusers.utils import load_image
 
-controlnetModel_path = r"/workspace/controlnet-depth-sdxl-1.0"
-sd_xl_path = r"/workspace/stable-diffusion-webui/models/Stable-diffusion/sd_xl_base_1.0.safetensors"
-vae_path = r"/workspace/models/sdxl-vae-fp16-fix"
-reference_image_directory = r"/workspace/Pepsi/imagenes_de_referencia"
-output_directory = r"/workspace/Pepsi/resultados"
-base_prompt = "wooden table with a plate containing ({}) and a generic can of soda as drink, cozy restaurant background, cinematic, high resolution, high detail, 4k"
-
-depth_estimator = DPTForDepthEstimation.from_pretrained("Intel/dpt-hybrid-midas").to("cuda")
-feature_extractor = DPTFeatureExtractor.from_pretrained("Intel/dpt-hybrid-midas")
-controlnet = ControlNetModel.from_pretrained(
-    controlnetModel_path,
-    variant="fp16",
-    use_safetensors=True,
-    torch_dtype=torch.float16,
-)
-vae = AutoencoderKL.from_pretrained(vae_path, torch_dtype=torch.float16)
-pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-xl-base-1.0",
-    controlnet=controlnet,
-    vae=vae,
-    variant="fp16",
-    use_safetensors=True,
-    torch_dtype=torch.float16,
-)
-pipe.to("cuda")
-
 def get_depth_map(image):
     image = feature_extractor(images=image, return_tensors="pt").pixel_values.to("cuda")
     with torch.no_grad(), torch.autocast("cuda"):
@@ -69,6 +43,49 @@ def get_next_filename(directory):
     next_number = max(numbers, default=0) + 1
     return os.path.join(directory, f"{next_number}.png")
 
+controlnetModel_path = r"/workspace/controlnet-depth-sdxl-1.0"
+sd_xl_path = r"/workspace/stable-diffusion-webui/models/Stable-diffusion/sd_xl_base_1.0.safetensors"
+vae_path = r"/workspace/models/sdxl-vae-fp16-fix"
+reference_image_directory = r"/workspace/Pepsi/imagenes_de_referencia"
+output_directory = r"/workspace/Pepsi/resultados"
+prompt = "wooden table with a plate containing ({}) and a generic can of soda as drink, cozy restaurant background, cinematic, high resolution, high detail, 4k"
+negative_prompt = "watermark, text, logos, poorly drawn, bad quality, flat, unappetizing, unrealistic proportions, blurry, dull colors, pixelated, low resolution, bad composition, bad lighting, multiple plates, glass, ice, water, top view, tomato can, can in food"
+num_inference_steps = 25
+controlnet_conditioning_scale = 1.20
+height = 1024
+width = 1024
+guidance_scale = 15
+
+depth_estimator = DPTForDepthEstimation.from_pretrained("Intel/dpt-hybrid-midas").to("cuda")
+feature_extractor = DPTFeatureExtractor.from_pretrained("Intel/dpt-hybrid-midas")
+controlnet = ControlNetModel.from_pretrained(
+    controlnetModel_path,
+    variant="fp16",
+    use_safetensors=True,
+    torch_dtype=torch.float16,
+)
+vae = AutoencoderKL.from_pretrained(vae_path, torch_dtype=torch.float16)
+pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-xl-base-1.0",
+    controlnet=controlnet,
+    vae=vae,
+    variant="fp16",
+    use_safetensors=True,
+    torch_dtype=torch.float16,
+    scheduler="EulerAncestralDiscreteScheduler",
+)
+pipe.to("cuda")
+
+call_args = {
+    "prompt": prompt,
+    "height": height,
+    "width": width,
+    "num_inference_steps": num_inference_steps,
+    "guidance_scale": guidance_scale,
+    "negative_prompt": negative_prompt,
+    "controlnet_conditioning_scale": controlnet_conditioning_scale,
+}
+
 while True:
         user_input = input("Enter the food items (e.g., hamburger and noodles) or type 'exit' to quit: ")
         if user_input.lower() == 'exit':  # Gracefully exit if the user types "exit"
@@ -78,15 +95,11 @@ while True:
         image_path, selected_filename = select_random_image(reference_image_directory)
         # print(f"Selected image: {selected_filename}")
         image = load_image(image_path).resize((1024, 1024))
-        controlnet_conditioning_scale = 0.8
         depth_image = get_depth_map(image)  # TODO: preprosesar todas las imagenes de referencia
         prompt = base_prompt.format(user_input)
         images = pipe(
-            prompt,
             image=depth_image,
-            strength=0.99,
-            num_inference_steps=30,
-            controlnet_conditioning_scale=controlnet_conditioning_scale,
+            **call_args,
         ).images
 
         output_path = get_next_filename(output_directory)
