@@ -117,19 +117,19 @@ def generate_image():
         return jsonify({'error': 'No prompt provided'}), 400
     
 
-    prompt_template = "wooden table with a plate of {} and (one) blue pepsi can next to it , realistic detailed , cozy restaurant background, hyper-realistic, high resolution, restaurant background"
+    prompt_template = "A magazine photograph of an amazing plate of {} by chef Gordan Ramsey and (one) ((blue pepsi can)) on the side, award winning photograph by an acclaimed photographer, f1.8, cinematic lighting, focused composition lots of detail, extremely detailed, full of detail, wide color range, high dynamics"
     prompt = prompt_template.format(user_input)
     
     with torch.inference_mode():
         checkpointloadersimple = CheckpointLoaderSimple()
         checkpointloadersimple_4 = checkpointloadersimple.load_checkpoint(
-            ckpt_name="sd_xl_base_1.0.safetensors"
+            ckpt_name="cyberrealisticXL_v20.safetensors"
         )
 
         loraloader = LoraLoader()
         loraloader_11 = loraloader.load_lora(
             lora_name="blue pepsi can-000005.safetensors",
-            strength_model=0.9,
+            strength_model=0.8,
             strength_clip=1,
             model=get_value_at_index(checkpointloadersimple_4, 0),
             clip=get_value_at_index(checkpointloadersimple_4, 1),
@@ -152,7 +152,7 @@ def generate_image():
                 )
 
                 cliptextencode_7 = cliptextencode.encode(
-                    text="cocacola, clarity, effects, deformed can, deformed logo, watermark, poorly drawn, bad quality, flat, unappetizing, unrealistic proportions, blurry, dull colors, pixelated, low resolution, bad composition, bad lighting",
+                    text="cocacola, two cans, overlay, grit, dull, washed out, low contrast, blurry, hazy, malformed, warped, deformed, text, watermark, unfocused background, poorly drawn, bad quality, unappetizing, unrealistic proportions, pixelated, low resolution, bad lighting, multiple plates, low detail, low quality, worst quality, 2d, 3d, cartoon, illustration, painting, sketch, copyright, boring",
                     clip=get_value_at_index(loraloader_11, 1),
                 )
 
@@ -160,7 +160,7 @@ def generate_image():
                     ksampler_3 = ksampler.sample(
                         seed=random.randint(1, 2**64),
                         steps=30,
-                        cfg=8,
+                        cfg=7,
                         sampler_name="euler",
                         scheduler="normal",
                         denoise=1,
