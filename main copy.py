@@ -96,7 +96,7 @@ while True:
         # print(f"Selected image: {selected_filename}")
         image = load_image(image_path).resize((1024, 1024))
         depth_image = get_depth_map(image)  # TODO: preprosesar todas las imagenes de referencia
-        prompt = base_prompt.format(user_input)
+        prompt = prompt.format(user_input)
         images = pipe(
             image=depth_image,
             **call_args,
