@@ -5,16 +5,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
 
 # URL of the API endpoint
-url = "https://nn1etsjuy11z8t-4000.proxy.runpod.net/generate"
+url = "http://127.0.0.1:4000/generate"
 
 # Headers required for the API request
 headers = {
     "Content-Type": "application/json",
-    "Cookie": "__cflb=02DiuGz3huhhVux26zX9GPq8X3AXuduC2kBJ4ccQLh4aG; __cflb=02DiuGz3huhhVux26zVY5tw5fAQEvh17kK1wtQt78gpJ8"
 }
 
 # List of food items to test with
-food_items = ["BARBACUE", "PIZZA", "SUSHI", "BURGER", "PASTA"]
+food_items = ["BARBACUE", "PIZZA", "SUSHI", "BURGER", "PASTA", "TACOS", "CHICKEN TACOS", "SHRIMP TACOS"]
 
 # Number of total tests to perform
 total_tests = 50
