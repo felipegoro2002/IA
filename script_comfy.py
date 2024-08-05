@@ -7,10 +7,11 @@ import torch
 from PIL import Image
 from io import BytesIO
 import numpy as np
+import requests
+import urllib.parse
 
 # Set up AWS credentials
 
-# Initialize SQS and S3 clients
 sqs = boto3.client('sqs')
 s3 = boto3.client('s3')
 queue_url = 'https://sqs.us-east-1.amazonaws.com/220959411709/pepsiqueue.fifo'
@@ -70,13 +71,13 @@ from nodes import (
 with torch.inference_mode():
         checkpointloadersimple = CheckpointLoaderSimple()
         checkpointloadersimple_4 = checkpointloadersimple.load_checkpoint(
-            ckpt_name="cyberrealisticXL_v20.safetensors"
+            ckpt_name="cyberrealisticXL_v21.safetensors"
         )
 
         loraloader = LoraLoader()
         loraloader_11 = loraloader.load_lora(
             lora_name="blue pepsi can-000005.safetensors",
-            strength_model=0.8,
+            strength_model=0.9,
             strength_clip=1,
             model=get_value_at_index(checkpointloadersimple_4, 0),
             clip=get_value_at_index(checkpointloadersimple_4, 1),
@@ -90,7 +91,7 @@ def process_message(message):
     user_input = data['prompt']
     uuid = data['uuid']
 
-    prompt_template = "A magazine photograph of an amazing plate of {} by chef Gordan Ramsey and (one) ((blue pepsi can)) on the side, award winning photograph by an acclaimed photographer, f1.8, cinematic lighting, focused composition lots of detail, extremely detailed, full of detail, wide color range, high dynamics"
+    prompt_template = "A magazine photograph of an amazing plate of ((({}))) by chef Gordan Ramsey and (one) unmodified ((blue pepsi can)) on the side, f1.8, cinematic lighting, focused composition lots of detail, extremely detailed, full of detail, wide color range, high dynamics, high resolution, 4k"
     prompt = prompt_template.format(user_input)
 
     with torch.inference_mode():
@@ -107,14 +108,14 @@ def process_message(message):
         )
 
         cliptextencode_7 = cliptextencode.encode(
-            text="cocacola, two cans, overlay, grit, dull, washed out, low contrast, blurry, hazy, malformed, warped, deformed, text, watermark, unfocused background, poorly drawn, bad quality, unappetizing, unrealistic proportions, pixelated, low resolution, bad lighting, multiple plates, low detail, low quality, worst quality, 2d, 3d, cartoon, illustration, painting, sketch, copyright, boring",
+            text="cocacola, yellow can, orange can, two cans, humans, overlay, grit, dull, washed out, low contrast, blurry, hazy, malformed, warped, deformed, text, watermark, unfocused background, poorly drawn, bad quality, unappetizing, unrealistic proportions, pixelated, low resolution, bad lighting, multiple plates, low detail, low quality, worst quality, cartoon, illustration, painting, sketch, copyright, boring",
             clip=get_value_at_index(loraloader_11, 1),
         )
 
         ksampler_3 = ksampler.sample(
             seed=random.randint(1, 2**64),
             steps=30,
-            cfg=7,
+            cfg=9,
             sampler_name="euler",
             scheduler="normal",
             denoise=1,
@@ -137,9 +138,19 @@ def process_message(message):
         buffer.seek(0)
 
         s3_key = f"pruebas/{uuid}.png"
-        s3.upload_fileobj(buffer, bucket_name, s3_key)
+        s3.upload_fileobj(buffer, bucket_name, s3_key, ExtraArgs={'ContentType': 'image/png'})
+        
+        object_url = f"https://{bucket_name}.s3.amazonaws.com/{s3_key}"
 
-        print(f"Image generated and uploaded to S3 successfully with key {s3_key}")
+        confirmacion = {
+                "titulo": user_input,
+                "media": object_url,
+                "uuid": uuid
+            }
+        url = "http://ia-pepsi-env.eba-q2ivk33d.us-east-1.elasticbeanstalk.com/media_upload/"
+        headers = {"Content-Type": "application/json"}
+        requests.post(url, headers=headers, data=json.dumps(confirmacion))
+        print(f"Prompt: {user_input} URL: {object_url}")
 
 def poll_queue():
     while True:
