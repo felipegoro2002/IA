@@ -12,6 +12,7 @@ import urllib.parse
 
 # Set up AWS credentials
 
+# Initialize SQS and S3 clients
 sqs = boto3.client('sqs')
 s3 = boto3.client('s3')
 queue_url = 'https://sqs.us-east-1.amazonaws.com/220959411709/pepsiqueue.fifo'
@@ -77,7 +78,7 @@ with torch.inference_mode():
         loraloader = LoraLoader()
         loraloader_11 = loraloader.load_lora(
             lora_name="blue pepsi can-000005.safetensors",
-            strength_model=0.9,
+            strength_model=0.85,
             strength_clip=1,
             model=get_value_at_index(checkpointloadersimple_4, 0),
             clip=get_value_at_index(checkpointloadersimple_4, 1),
@@ -91,7 +92,7 @@ def process_message(message):
     user_input = data['prompt']
     uuid = data['uuid']
 
-    prompt_template = "A magazine photograph of an amazing plate of ((({}))) by chef Gordan Ramsey and (one) unmodified ((blue pepsi can)) on the side, f1.8, cinematic lighting, focused composition lots of detail, extremely detailed, full of detail, wide color range, high dynamics, high resolution, 4k"
+    prompt_template = "Product image of an amazing plate of ((({}))) by chef Gordan Ramsey with ((((one unmodified blue pepsi can)))) as drink, f1.8, embedding:detailxl, fixl-art, focused composition, extremely detailed, high dynamics, high resolution, 4k"
     prompt = prompt_template.format(user_input)
 
     with torch.inference_mode():
@@ -108,14 +109,14 @@ def process_message(message):
         )
 
         cliptextencode_7 = cliptextencode.encode(
-            text="cocacola, yellow can, orange can, two cans, humans, overlay, grit, dull, washed out, low contrast, blurry, hazy, malformed, warped, deformed, text, watermark, unfocused background, poorly drawn, bad quality, unappetizing, unrealistic proportions, pixelated, low resolution, bad lighting, multiple plates, low detail, low quality, worst quality, cartoon, illustration, painting, sketch, copyright, boring",
+            text="cocacola, yellow can, orange can, red can, NEG-fixl-2, two cans, humans, overlay, straw, blurry, hazy, warped, deformed, text, watermark, poorly drawn, bad quality, unappetizing, unrealistic proportions, pixelated, low resolution, bad lighting, multiple plates, low detail, low quality, cartoon, illustration, painting, sketch, copyright, boring",
             clip=get_value_at_index(loraloader_11, 1),
         )
 
         ksampler_3 = ksampler.sample(
             seed=random.randint(1, 2**64),
-            steps=30,
-            cfg=9,
+            steps=40,
+            cfg=8,
             sampler_name="euler",
             scheduler="normal",
             denoise=1,
